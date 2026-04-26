@@ -10,6 +10,21 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+// Auth Middleware
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization;
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+  
+  if (token === 'Bearer secret-token-123') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
+};
+
 // GET all users
 router.get('/', async (req, res) => {
   const users = await User.find();
@@ -36,7 +51,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE user
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
   res.json({ message: 'User deleted' });
 });
