@@ -8,6 +8,12 @@ dotenv.config(); //loads .env file to access URI and PORT
 const app = express(); // creates app instance
 app.use(express.json()); //tells server to accept JSON in request body
 
+// Custom Logger Middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
+  next();
+});
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Connected'))
     .catch((err) => console.log('Connection Error:', err));
