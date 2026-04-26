@@ -3,9 +3,9 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  age: Number
+  name: {type : 'String', required: true},
+  email: {type : 'String', required: true},
+  age: {type : 'Number', required: true}
 });
 
 const User = mongoose.model('User', userSchema);
@@ -13,11 +13,11 @@ const User = mongoose.model('User', userSchema);
 // Auth Middleware
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization;
-  
+
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
-  
+
   if (token === 'Bearer secret-token-123') {
     next();
   } else {
@@ -27,33 +27,63 @@ const authMiddleware = (req, res, next) => {
 
 // GET all users
 router.get('/', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 // GET single user
 router.get('/:id', async (req, res) => {
-  const user = await User.findById(req.params.id);
-  res.json(user);
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 // POST create user
-router.post('/', async (req, res) => {
-  const user = new User(req.body);
-  await user.save();
-  res.status(201).json(user);
-});
+router.post('/', authMiddleware, async (req, res) => {
+  try{
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  }catch(err){
+    res.status(500).json({message: 'Server error', error: err.message});
+  }
+}
+);
 
 // PUT update user
-router.put('/:id', async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(user);
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+  
 });
 
-// DELETE user
 router.delete('/:id', authMiddleware, async (req, res) => {
-  await User.findByIdAndDelete(req.params.id);
-  res.json({ message: 'User deleted' });
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 module.exports = router;
